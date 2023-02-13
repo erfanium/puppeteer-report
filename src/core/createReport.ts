@@ -70,7 +70,7 @@ export async function createReport(
         ...size,
         x: x - size.width,
         y: y - size.height,
-        blendMode: BlendMode.Multiply
+        blendMode: BlendMode.Multiply,
       });
     }
 
@@ -79,7 +79,7 @@ export async function createReport(
         ...size,
         x: x - size.width,
         y: 0,
-        blendMode: BlendMode.Multiply
+        blendMode: BlendMode.Multiply,
       });
     }
 
@@ -100,5 +100,5 @@ export async function createReport(
     }
   }
 
-  return await baseDoc.save();
+  return baseDoc;
 }

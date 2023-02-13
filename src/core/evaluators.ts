@@ -43,8 +43,13 @@ export function getHeightEvaluator(
       return 0;
     };
 
-    const header = document.getElementById("header");
-    const footer = document.getElementById("footer");
+    const header = document.querySelector(
+      `body > section > header`
+    ) as HTMLElement;
+
+    const footer = document.querySelector(
+      `body > section > footer`
+    ) as HTMLElement;
 
     // inject a style sheet
     const styleEl = document.createElement("style");
@@ -54,10 +59,12 @@ export function getHeightEvaluator(
 
     // to respect user-defined PDF margins,
     if (header) {
-      styleSheet.insertRule(`#header { margin-top: ${marginTop}`);
+      styleSheet.insertRule(`body>section>header { margin-top: ${marginTop}`);
     }
     if (footer) {
-      styleSheet.insertRule(`#footer { margin-bottom: ${marginBottom}`);
+      styleSheet.insertRule(
+        `body>section>footer { margin-bottom: ${marginBottom}`
+      );
     }
 
     const headerHeight = getHeight(header);
@@ -99,8 +106,13 @@ export function getBaseEvaluator(headerHeight: number, footerHeight: number) {
   type ArgumentType = typeof argument;
 
   const pageFunc = ({ headerHeight, footerHeight }: ArgumentType) => {
-    const header = document.getElementById("header");
-    const footer = document.getElementById("footer");
+    const header = document.querySelector(
+      `body > section > header`
+    ) as HTMLElement;
+
+    const footer = document.querySelector(
+      `body > section > footer`
+    ) as HTMLElement;
 
     // reset body margin
     document.body.style.margin = "0";
@@ -153,8 +165,7 @@ export function getBaseEvaluator(headerHeight: number, footerHeight: number) {
 //  ------------
 // |  header 2  |
 //       ...
-export async function getHeadersEvaluator(basePdfBuffer: Uint8Array) {
-  const doc = await PDFDocument.load(basePdfBuffer);
+export function getHeadersEvaluator(doc: PDFDocument) {
   const argument = { pagesCount: doc.getPageCount() };
   type ArgumentType = typeof argument;
 
@@ -202,8 +213,13 @@ export async function getHeadersEvaluator(basePdfBuffer: Uint8Array) {
       addPageBreak();
     };
 
-    const header = document.getElementById("header");
-    const footer = document.getElementById("footer");
+    const header = document.querySelector(
+      `body > section > header`
+    ) as HTMLElement;
+
+    const footer = document.querySelector(
+      `body > section > footer`
+    ) as HTMLElement;
 
     resetStyle(header);
     resetStyle(footer);
@@ -236,9 +252,26 @@ export async function getHeadersEvaluator(basePdfBuffer: Uint8Array) {
     setElementsValue(titleElements, document.title);
   };
 
-  return [doc, pageFunc, argument] as [
-    doc: typeof doc,
+  return [pageFunc, argument] as [
     pageFunc: typeof pageFunc,
     argument: ArgumentType
+  ];
+}
+
+export function showOnlySection(sectionId: number) {
+  const pageFunc = (sectionId: number) => {
+    const sections = document.querySelectorAll("body > section");
+
+    // remove all sections from dom except the one we want to print
+    for (let i = 0; i < sections.length; i++) {
+      if (i !== sectionId - 1) {
+        sections[i].remove();
+      }
+    }
+  };
+
+  return [pageFunc, sectionId] as [
+    pageFunc: typeof pageFunc,
+    sectionId: number
   ];
 }

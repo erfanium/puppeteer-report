@@ -1,0 +1,6 @@
+examples
+.vscode
+.github
+.attachment
+src
+node_modules

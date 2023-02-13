@@ -1,23 +1,11 @@
-import * as fs from "fs";
+import { load } from "cheerio";
+import { PDFDocument } from "pdf-lib";
+import type { Page, PDFOptions, WaitForOptions } from "puppeteer";
 import * as core from "./core";
-import type { Page, Browser, PDFOptions } from "./types";
 
-/**
- * Convert HTML file to PDF
- * @param browser puppeteer/puppeteer-core browser object
- * @param file full path of HTML file
- * @param options output PDF options
- * @returns PDF as an array of bytes
- */
-async function pdf(browser: Browser, file: string, options?: PDFOptions) {
-  const page = await browser.newPage();
-  try {
-    await page.goto("file:///" + file);
-
-    return await pdfPage(page, options);
-  } finally {
-    await page.close();
-  }
+function sectionsCount(html: string) {
+  const $ = load(html);
+  return $("body > section").length;
 }
 
 /**
@@ -26,52 +14,66 @@ async function pdf(browser: Browser, file: string, options?: PDFOptions) {
  * @param options output PDF options
  * @returns PDF as an array of bytes
  */
-async function pdfPage(page: Page, options?: PDFOptions): Promise<Uint8Array> {
-  const { path, ...pdfOptions } = options ?? {};
+async function pdf(
+  page: Page,
+  html: string,
+  waitForOptions?: WaitForOptions,
+  pdfOptions?: PDFOptions
+) {
   const margin = {
     marginTop: pdfOptions?.margin?.top ?? 0,
     marginBottom: pdfOptions?.margin?.bottom ?? 0,
   };
 
-  const [getHeightFunc, getHeightArg] = core.getHeightEvaluator(
-    margin.marginTop,
-    margin.marginBottom,
-    pdfOptions?.scale
-  );
+  const nSections = sectionsCount(html);
 
-  const { headerHeight, footerHeight } = await page.evaluate(
-    getHeightFunc,
-    getHeightArg
-  );
+  const sections: PDFDocument[] = [];
 
-  const [basePageEvalFunc, basePageEvalArg] = core.getBaseEvaluator(
-    headerHeight,
-    footerHeight
-  );
-  await page.evaluate(basePageEvalFunc, basePageEvalArg);
+  // open page via string html
 
-  const basePdfBuffer = await page.pdf(pdfOptions);
+  for (let i = 1; i <= nSections; i++) {
+    // reset page
+    await page.setContent(html, waitForOptions);
 
-  const [doc, headerEvalFunc, headerEvalArg] = await core.getHeadersEvaluator(
-    basePdfBuffer
-  );
-  await page.evaluate(headerEvalFunc, headerEvalArg);
+    await page.evaluate(...core.showOnlySection(i));
 
-  const headerPdfBuffer = await page.pdf(pdfOptions);
+    const { headerHeight, footerHeight } = await page.evaluate(
+      ...core.getHeightEvaluator(
+        margin.marginTop,
+        margin.marginBottom,
+        pdfOptions?.scale
+      )
+    );
 
-  const result = await core.createReport(
-    doc,
-    headerPdfBuffer,
-    headerHeight,
-    footerHeight
-  );
+    await page.evaluate(...core.getBaseEvaluator(headerHeight, footerHeight));
+    const basePdfBuffer = await page.pdf(pdfOptions);
+    const bodyDoc = await PDFDocument.load(basePdfBuffer);
 
-  if (path) {
-    await fs.promises.writeFile(path, result);
+    await page.evaluate(...core.getHeadersEvaluator(bodyDoc));
+    const headerPdf = await page.pdf(pdfOptions);
+
+    const result = await core.createReport(
+      bodyDoc,
+      headerPdf,
+      headerHeight,
+      footerHeight
+    );
+
+    sections.push(result);
   }
 
-  return result;
+  const document = await PDFDocument.create();
+  for (const section of sections) {
+    const pages = await document.copyPages(section, section.getPageIndices());
+    for (const page of pages) {
+      document.addPage(page);
+    }
+  }
+
+  const result = await document.save();
+
+  return Buffer.from(result);
 }
 
-export { pdf, pdfPage };
-export default { pdf, pdfPage };
+export { pdf };
+export default { pdf };
