@@ -8,6 +8,10 @@ function sectionsCount(html: string) {
   return $("body > section").length;
 }
 
+function isValidReportHtml(html: string) {
+  return sectionsCount(html) > 0;
+}
+
 /**
  * Convert a Page to PDF
  * @param page puppeteer/puppeteer-core page object
@@ -75,5 +79,5 @@ async function pdf(
   return Buffer.from(result);
 }
 
-export { pdf };
-export default { pdf };
+export { pdf, isValidReportHtml };
+export default { pdf, isValidReportHtml };

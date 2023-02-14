@@ -1,6 +1,6 @@
 {
   "name": "@erfanium/puppeteer-report",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "create pdf report with header, footer and page number with puppeteer",
   "main": "out/index.js",
   "types": "out/index.d.ts",
