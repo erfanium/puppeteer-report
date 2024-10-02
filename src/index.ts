@@ -1,6 +1,6 @@
 import { load } from "cheerio";
 import { PDFDocument } from "pdf-lib";
-import type { Page, PDFOptions, WaitForOptions } from "puppeteer";
+import type { Page, PDFOptions, WaitForOptions } from "puppeteer-core";
 import * as core from "./core";
 
 function sectionsCount(html: string) {

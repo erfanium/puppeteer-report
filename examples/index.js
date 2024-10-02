@@ -1,15 +1,15 @@
 // @ts-check
 const report = require("../out");
 const path = require("path");
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
 const fs = require("fs/promises");
 const example = process.argv[2];
 
 async function main() {
-  const browser = await puppeteer.launch({
-    executablePath: "/home/erfanium/Documents/chrome-linux/chrome",
-    headless: true,
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: `wss://URL/?token=TOKEN`,
   });
+
   try {
     const file = path.join(__dirname, example, "index.html");
     const html = await fs.readFile(file, "utf-8");
