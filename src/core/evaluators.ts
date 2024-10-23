@@ -131,6 +131,9 @@ export function getBaseEvaluator(headerHeight: number, footerHeight: number) {
       isTop: boolean
     ) => {
       if (element) {
+        // save the original display
+        element.dataset.originalDisplay = element.style.display;
+
         element.style.display = "none";
 
         if (isTop) {
@@ -182,7 +185,7 @@ export function getHeadersEvaluator(doc: PDFDocument) {
 
     const resetStyle = (element: HTMLElement | null) => {
       if (element) {
-        element.style.display = "block";
+        element.style.display = element.dataset.originalDisplay ?? "block";
       }
     };
 
