@@ -52,6 +52,25 @@ async function pdf(
     await page.evaluate(...core.getBaseEvaluator(headerHeight, footerHeight));
     const basePdfBuffer = await page.pdf(pdfOptions);
     const bodyDoc = await PDFDocument.load(basePdfBuffer);
+    const metaData = await page.evaluate(() => {
+      return {
+        title: (<HTMLElement>document.querySelector("head > title"))?.innerText,
+        author: (<HTMLElement>document.querySelector("head meta[name=author]"))
+          ?.innerText,
+        subject: (<HTMLElement>(
+          document.querySelector("head meta[name=subject]")
+        ))?.innerText,
+        keywords: (<HTMLElement>(
+          document.querySelector("head meta[name=keywords]")
+        ))?.innerText?.split(","),
+      };
+    });
+    if (metaData) {
+      if (metaData.title) bodyDoc.setTitle(metaData.title);
+      if (metaData.author) bodyDoc.setAuthor(metaData.author);
+      if (metaData.subject) bodyDoc.setSubject(metaData.subject);
+      if (metaData.keywords) bodyDoc.setKeywords(metaData.keywords);
+    }
 
     await page.evaluate(...core.getHeadersEvaluator(bodyDoc));
     const headerPdf = await page.pdf(pdfOptions);

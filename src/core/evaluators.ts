@@ -185,7 +185,7 @@ export function getHeadersEvaluator(doc: PDFDocument) {
 
     const resetStyle = (element: HTMLElement | null) => {
       if (element) {
-        element.style.display = element.dataset.originalDisplay ?? "block";
+        element.style.display = "";
       }
     };
 
