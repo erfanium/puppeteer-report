@@ -22,7 +22,9 @@ async function pdf(
   page: Page,
   html: string,
   waitForOptions?: WaitForOptions,
-  pdfOptions?: PDFOptions
+  pdfOptions?: PDFOptions & {
+    faPageNumber?: boolean;
+  }
 ) {
   const margin = {
     marginTop: pdfOptions?.margin?.top ?? 0,
@@ -42,26 +44,17 @@ async function pdf(
     await page.evaluate(...core.showOnlySection(i));
 
     const { headerHeight, footerHeight } = await page.evaluate(
-      ...core.getHeightEvaluator(
-        margin.marginTop,
-        margin.marginBottom,
-        pdfOptions?.scale
-      )
+      ...core.getHeightEvaluator(margin.marginTop, margin.marginBottom, pdfOptions?.scale)
     );
 
     await page.evaluate(...core.getBaseEvaluator(headerHeight, footerHeight));
     const basePdfBuffer = await page.pdf(pdfOptions);
     const bodyDoc = await PDFDocument.load(basePdfBuffer);
 
-    await page.evaluate(...core.getHeadersEvaluator(bodyDoc));
+    await page.evaluate(...core.getHeadersEvaluator(bodyDoc, pdfOptions?.faPageNumber));
     const headerPdf = await page.pdf(pdfOptions);
 
-    const result = await core.createReport(
-      bodyDoc,
-      headerPdf,
-      headerHeight,
-      footerHeight
-    );
+    const result = await core.createReport(bodyDoc, headerPdf, headerHeight, footerHeight);
 
     sections.push(result);
   }

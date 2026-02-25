@@ -1,11 +1,7 @@
 import { PDFDocument } from "pdf-lib";
 
 // get header and/or footer height from html
-export function getHeightEvaluator(
-  marginTop: number | string,
-  marginBottom: number | string,
-  scale?: number
-) {
+export function getHeightEvaluator(marginTop: number | string, marginBottom: number | string, scale?: number) {
   const normalizeMargin = (margin: number | string) => {
     if (typeof margin == "number") {
       return margin + "px";
@@ -26,8 +22,7 @@ export function getHeightEvaluator(
     const getHeight = (element: HTMLElement | null) => {
       if (element) {
         const styles = window.getComputedStyle(element);
-        const margin =
-          parseFloat(styles["marginTop"]) + parseFloat(styles["marginBottom"]);
+        const margin = parseFloat(styles["marginTop"]) + parseFloat(styles["marginBottom"]);
 
         // change position to ignore margin collapse
         const position = element.style.position;
@@ -43,13 +38,9 @@ export function getHeightEvaluator(
       return 0;
     };
 
-    const header = document.querySelector(
-      `body > section > header`
-    ) as HTMLElement;
+    const header = document.querySelector(`body > section > header`) as HTMLElement;
 
-    const footer = document.querySelector(
-      `body > section > footer`
-    ) as HTMLElement;
+    const footer = document.querySelector(`body > section > footer`) as HTMLElement;
 
     // inject a style sheet
     const styleEl = document.createElement("style");
@@ -62,9 +53,7 @@ export function getHeightEvaluator(
       styleSheet.insertRule(`body>section>header { margin-top: ${marginTop}`);
     }
     if (footer) {
-      styleSheet.insertRule(
-        `body>section>footer { margin-bottom: ${marginBottom}`
-      );
+      styleSheet.insertRule(`body>section>footer { margin-bottom: ${marginBottom}`);
     }
 
     const headerHeight = getHeight(header);
@@ -73,10 +62,7 @@ export function getHeightEvaluator(
     return { headerHeight, footerHeight };
   };
 
-  return [pageFunc, argument] as [
-    pageFunc: typeof pageFunc,
-    argument: ArgumentType
-  ];
+  return [pageFunc, argument] as [pageFunc: typeof pageFunc, argument: ArgumentType];
 }
 
 // remove header and footer from HTML content to create
@@ -106,13 +92,9 @@ export function getBaseEvaluator(headerHeight: number, footerHeight: number) {
   type ArgumentType = typeof argument;
 
   const pageFunc = ({ headerHeight, footerHeight }: ArgumentType) => {
-    const header = document.querySelector(
-      `body > section > header`
-    ) as HTMLElement;
+    const header = document.querySelector(`body > section > header`) as HTMLElement;
 
-    const footer = document.querySelector(
-      `body > section > footer`
-    ) as HTMLElement;
+    const footer = document.querySelector(`body > section > footer`) as HTMLElement;
 
     // reset body margin
     document.body.style.margin = "0";
@@ -125,11 +107,7 @@ export function getBaseEvaluator(headerHeight: number, footerHeight: number) {
 
     // hide the element and add the height of it
     // as page margin
-    const evaluate = (
-      element: HTMLElement | null,
-      height: number,
-      isTop: boolean
-    ) => {
+    const evaluate = (element: HTMLElement | null, height: number, isTop: boolean) => {
       if (element) {
         // save the original display
         element.dataset.originalDisplay = element.style.display;
@@ -148,10 +126,7 @@ export function getBaseEvaluator(headerHeight: number, footerHeight: number) {
     evaluate(footer, footerHeight, false);
   };
 
-  return [pageFunc, argument] as [
-    pageFunc: typeof pageFunc,
-    argument: ArgumentType
-  ];
+  return [pageFunc, argument] as [pageFunc: typeof pageFunc, argument: ArgumentType];
 }
 
 // convert HTML content to a header/footer only pages, for each base doc's pages.
@@ -168,16 +143,13 @@ export function getBaseEvaluator(headerHeight: number, footerHeight: number) {
 //  ------------
 // |  header 2  |
 //       ...
-export function getHeadersEvaluator(doc: PDFDocument) {
-  const argument = { pagesCount: doc.getPageCount() };
+export const getHeadersEvaluator = (doc: PDFDocument, faPageNumber?: boolean) => {
+  const argument = { pagesCount: doc.getPageCount(), faPageNumber };
   type ArgumentType = typeof argument;
 
-  const pageFunc = ({ pagesCount }: ArgumentType) => {
+  const pageFunc = ({ pagesCount, faPageNumber }: ArgumentType) => {
     // set a value for all selected elements
-    const setElementsValue = (
-      elements: HTMLCollectionOf<Element>,
-      value: string
-    ) => {
+    const setElementsValue = (elements: HTMLCollectionOf<Element>, value: string) => {
       for (const element of elements) {
         element.textContent = value;
       }
@@ -198,15 +170,21 @@ export function getHeadersEvaluator(doc: PDFDocument) {
 
     // duplicate an element in the page
     const cloneElement = (element: HTMLElement, pageNumber: string) => {
+      const fa = (t: string | number) =>
+        t == null ? "" : t.toLocaleString().replace(/\d|\./g, (m) => "۰۱۲۳۴۵۶۷۸۹."[+"0123456789.".indexOf(m)] ?? m);
+
+      const pageN = faPageNumber ? fa(pageNumber) : pageNumber.toString();
+      const totalPages = faPageNumber ? fa(pagesCount) : pagesCount.toString();
+
       const cloned = element.cloneNode(true) as Document;
 
       // fill pageNumber
       const pageNumberElements = cloned.getElementsByClassName("pageNumber");
-      setElementsValue(pageNumberElements, pageNumber);
+      setElementsValue(pageNumberElements, pageN);
 
       // fill total page
       const totalPagesElements = cloned.getElementsByClassName("totalPages");
-      setElementsValue(totalPagesElements, pagesCount.toString());
+      setElementsValue(totalPagesElements, totalPages);
 
       document.body.appendChild(cloned);
 
@@ -216,13 +194,9 @@ export function getHeadersEvaluator(doc: PDFDocument) {
       addPageBreak();
     };
 
-    const header = document.querySelector(
-      `body > section > header`
-    ) as HTMLElement;
+    const header = document.querySelector(`body > section > header`) as HTMLElement;
 
-    const footer = document.querySelector(
-      `body > section > footer`
-    ) as HTMLElement;
+    const footer = document.querySelector(`body > section > footer`) as HTMLElement;
 
     resetStyle(header);
     resetStyle(footer);
@@ -242,11 +216,12 @@ export function getHeadersEvaluator(doc: PDFDocument) {
 
     // duplicate the header and footer element for each page
     for (let i = 0; i < pagesCount; i++) {
+      const pageIndex = (i + 1).toString();
       if (header) {
-        cloneElement(header, (i + 1).toString());
+        cloneElement(header, pageIndex);
       }
       if (footer) {
-        cloneElement(footer, (i + 1).toString());
+        cloneElement(footer, pageIndex);
       }
     }
 
@@ -255,11 +230,8 @@ export function getHeadersEvaluator(doc: PDFDocument) {
     setElementsValue(titleElements, document.title);
   };
 
-  return [pageFunc, argument] as [
-    pageFunc: typeof pageFunc,
-    argument: ArgumentType
-  ];
-}
+  return [pageFunc, argument] as [pageFunc: typeof pageFunc, argument: ArgumentType];
+};
 
 export function showOnlySection(sectionId: number) {
   const pageFunc = (sectionId: number) => {
@@ -273,8 +245,5 @@ export function showOnlySection(sectionId: number) {
     }
   };
 
-  return [pageFunc, sectionId] as [
-    pageFunc: typeof pageFunc,
-    sectionId: number
-  ];
+  return [pageFunc, sectionId] as [pageFunc: typeof pageFunc, sectionId: number];
 }
